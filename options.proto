@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "is/msgs/validate.proto";
+
+package is;
+
+message FrameConversionServiceOptions {
+  string broker_uri = 1;
+  string zipkin_uri = 2;
+  // path to directory containing files with the CameraCalibration object 
+  string calibrations_path = 3;
+}
