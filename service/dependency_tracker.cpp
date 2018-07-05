@@ -2,71 +2,64 @@
 
 namespace is {
 
+template <typename I, typename P>
+I adjacent_for_each(I first, I last, P&& predicate) {
+  if (first == last) return first;
+  auto second = first;
+  ++second;
+  while (second != last) { predicate(*first++, *second++); }
+  return second;
+}
+
 DependencyTracker::DependencyTracker(FrameConversion* c) : conversions(c) {}
 
-auto DependencyTracker::sorted_pair(FrameIds const& ids) const -> FrameIds {
-  if (ids.first <= ids.second) return ids;
-  return std::make_pair(ids.second, ids.first);
-};
+auto DependencyTracker::update_dependency(Path const& path) -> boost::optional<common::Tensor> {
+  auto route = conversions->find_path(path);
 
-auto DependencyTracker::add_dependency(FrameIds const& composed_id)
-    -> nonstd::expected<ComposedTransformation, std::string> {
-  auto composed_tf = conversions->find(composed_id.first, composed_id.second);
-
-  if (composed_tf) {
-    add_dependency(composed_tf->ids);
-  } else {
-    unresolved_dependencies[composed_id.first].insert(composed_id);
-    unresolved_dependencies[composed_id.second].insert(composed_id);
-    info("[DependencyTracker] Can't resolve {}<->{}", composed_id.first, composed_id.second);
-  }
-  return composed_tf;
-}
-
-void DependencyTracker::add_dependency(std::vector<FrameIds> const& ids) {
-  auto composed_id = FrameIds{ids.front().first, ids.back().second};
-  direct_dependencies[composed_id] = ids;
-
-  for (auto&& id : ids) {
-    auto key = sorted_pair(id);
-    reverse_dependencies[key].insert(composed_id);
-    info("[DependencyTracker] [+] {}<->{}: {}->{}", key.first, key.second, composed_id.first,
-         composed_id.second);
-  }
-}
-
-void DependencyTracker::remove_dependency(FrameIds const& ids) {
-  auto it = direct_dependencies.find(ids);
-  if (it != direct_dependencies.end()) {
-    for (auto&& id : it->second) {
-      auto key = sorted_pair(id);
-      reverse_dependencies[key].erase(ids);
-      info("[DependencyTracker] [-] {}<->{}: {}->{}", key.first, key.second, ids.first, ids.second);
+  if (!route) {
+    for (auto&& vertex : path) {
+      unresolved_dependencies[vertex].insert(path);
+      info("[DependencyTracker][+][Unresolved] {}: {}", vertex, path);
     }
-    direct_dependencies.erase(it);
-  } else {
-    warn("[DependencyTracker] Not removing {}->{} since it wasn't found", ids.first, ids.second);
+    return boost::none;
   }
+
+  direct_dependencies[path] = *route;
+  info("[DependencyTracker][+][Direct] {}: {}", path, *route);
+
+  auto insert_each_edge = [&](int64_t from, int64_t to) {
+    auto edge = sorted(Edge{from, to});
+    reverse_dependencies[edge].insert(path);
+    info("[DependencyTracker][+][Reverse] {}: {}", edge, path);
+  };
+  adjacent_for_each(route->begin(), route->end(), insert_each_edge);
+
+  return conversions->compose_path(*route);
 }
 
-auto DependencyTracker::find_dependencies(FrameIds const& ids) const
-    -> std::vector<std::vector<FrameIds>> {
-  std::vector<std::vector<FrameIds>> dependencies;
+void DependencyTracker::remove_dependency(Path const& path) {
+  auto direct_it = direct_dependencies.find(path);
+  if (direct_it != direct_dependencies.end()) {
+    auto remove_each_edge = [&](int64_t from, int64_t to) {
+      auto edge = sorted(Edge{from, to});
+      auto reverse_it = reverse_dependencies.find(edge);
+      assert(reverse_it != reverse_dependencies.end());
+      reverse_it->second.erase(path);
+      info("[DependencyTracker][-][Reverse] {}: {}", edge, path);
+    };
+    adjacent_for_each(direct_it->second.begin(), direct_it->second.end(), remove_each_edge);
 
-  auto key = sorted_pair(ids);
-  auto reverse_it = reverse_dependencies.find(key);
-  if (reverse_it != reverse_dependencies.end()) {
-    for (auto ids : reverse_it->second) {
-      auto direct_it = direct_dependencies.find(ids);
-      if (direct_it == direct_dependencies.end()) {
-        error("[DependencyTracker] Impossible state reached");
-        break;
+    direct_dependencies.erase(direct_it);
+    info("[DependencyTracker][-][Direct] {}", path);
+  } else {
+    for (auto&& vertex : path) {
+      auto unresolved_it = unresolved_dependencies.find(vertex);
+      if (unresolved_it != unresolved_dependencies.end()) {
+        unresolved_it->second.erase(path);
+        info("[DependencyTracker][-][Unresolved] {}: {}", vertex, path);
       }
-      dependencies.push_back(direct_it->second);
     }
   }
-
-  return dependencies;
 }
 
 }  // namespace is

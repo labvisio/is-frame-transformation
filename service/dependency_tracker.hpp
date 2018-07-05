@@ -9,15 +9,10 @@
 namespace is {
 
 class DependencyTracker {
-  std::unordered_map<FrameIds, std::vector<FrameIds>, FrameIdsHash> direct_dependencies;
-  std::unordered_map<FrameIds, std::unordered_set<FrameIds, FrameIdsHash>, FrameIdsHash>
-      reverse_dependencies;
-  std::unordered_map<int64_t, std::unordered_set<FrameIds, FrameIdsHash>> unresolved_dependencies;
+  std::unordered_map<Path, Path, PathHash> direct_dependencies;
+  std::unordered_map<Edge, std::unordered_set<Path, PathHash>, EdgeHash> reverse_dependencies;
+  std::unordered_map<int64_t, std::unordered_set<Path, PathHash>> unresolved_dependencies;
   FrameConversion* conversions;
-
-  auto sorted_pair(FrameIds const& ids) const -> FrameIds;
-  auto find_dependencies(FrameIds const& ids) const -> std::vector<std::vector<FrameIds>>;
-  void add_dependency(std::vector<FrameIds> const& ids);
 
   template <typename F>
   void check_unresolved_dependencies(int64_t id, F const& on_update);
@@ -25,8 +20,8 @@ class DependencyTracker {
  public:
   DependencyTracker(FrameConversion*);
 
-  auto add_dependency(FrameIds const& ids) -> nonstd::expected<ComposedTransformation, std::string>;
-  void remove_dependency(FrameIds const& ids);
+  auto update_dependency(Path const&) -> boost::optional<common::Tensor>;
+  void remove_dependency(Path const&);
 
   template <typename F>
   void update(vision::FrameTransformation const& tf, F const& on_update);
@@ -34,16 +29,20 @@ class DependencyTracker {
 
 template <typename F>
 void DependencyTracker::update(vision::FrameTransformation const& tf, F const& on_update) {
-  conversions->add(tf);
-  auto dependencies = find_dependencies(FrameIds{tf.from(), tf.to()});
-  for (auto&& dependency : dependencies) {
-    vision::FrameTransformation new_tf;
-    new_tf.set_from(dependency.front().first);
-    new_tf.set_to(dependency.back().second);
-    *new_tf.mutable_tf() = conversions->compose(dependency);
+  conversions->update_transformation(tf);
 
-    on_update(new_tf);
+  auto edge = Edge{tf.from(), tf.to()};
+  auto reverse_it = reverse_dependencies.find(sorted(edge));
+  if (reverse_it != reverse_dependencies.end()) {
+    for (auto path : reverse_it->second) {
+      auto direct_it = direct_dependencies.find(path);
+      assert(direct_it != direct_dependencies.end() &&
+             "Invalid state reverse dependency point to non existing direct dependency");
+
+      on_update(direct_it->first, conversions->compose_path(direct_it->second));
+    }
   }
+
   check_unresolved_dependencies(tf.from(), on_update);
   check_unresolved_dependencies(tf.to(), on_update);
 }
@@ -55,21 +54,16 @@ void DependencyTracker::check_unresolved_dependencies(int64_t id, F const& on_up
   // update will be triggered only when one of the outer vertices change.
   auto unresolved_it = unresolved_dependencies.find(id);
   if (unresolved_it != unresolved_dependencies.end()) {
-    auto& ids = unresolved_it->second;
+    auto& unresolved = unresolved_it->second;
 
-    for (auto it = ids.begin(); it != ids.end();) {
-      auto composed_tf = conversions->find(it->first, it->second);
-      if (composed_tf) {
-        info("[DependencyTracker] Resolved {}<->{}", it->first, it->second);
-        add_dependency(composed_tf->ids);
-
-        vision::FrameTransformation new_tf;
-        new_tf.set_from(it->first);
-        new_tf.set_to(it->second);
-        *new_tf.mutable_tf() = composed_tf->tf;
-        on_update(new_tf);
-
-        it = ids.erase(it);
+    for (auto it = unresolved.begin(); it != unresolved.end();) {
+      auto path = conversions->find_path(*it);
+      if (path) {
+        info("[DependencyTracker][Resolved] {}", *it);
+        // TODO: Avoid recomputation of path
+        update_dependency(*it);
+        on_update(*it, conversions->compose_path(*path));
+        it = unresolved.erase(it);
       } else {
         ++it;
       }

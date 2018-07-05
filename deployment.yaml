@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: is-frame-conversion-config
+  namespace: default
+data:
+  config: |-
+    {
+      "broker_uri": "amqp://rabbitmq.default",
+      "zipkin_uri": "http://zipkin.default",
+      "calibrations_path": "/opt/calibrations/is-aruco-calib/bristol"
+    }
+---
+
+apiVersion: extensions/v1beta1 
+kind: Deployment
+metadata:
+  name: "is-frame-conversion"
+spec:
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        app: is-frame-conversion
+    spec:
+      containers:
+      - name: service 
+        image: viros/is-frame-conversion:0.0.1
+        command: ["/service.bin"]
+        args: ["/opt/options/options.json"]
+        imagePullPolicy: Always
+        resources:
+          limits: 
+            cpu: "1.0"
+            memory: 128Mi
+        volumeMounts:
+          - name: options
+            mountPath: /opt/options
+          - name: calibrations
+            mountPath: /opt/calibrations
+      volumes:
+      - name: options
+        configMap:
+          name: is-frame-conversion-config
+          items:
+          - key: config
+            path: options.json
+      - name: calibrations
+        gitRepo:
+          repository: "http://github.com/labviros/is-aruco-calib"
+          revision: 50a3a7dcbb30ec3ded4f15eacf019e00451e0407

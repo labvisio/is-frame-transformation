@@ -13,10 +13,12 @@ set(module "frame-conversion")
 list(APPEND interfaces
   "frame_conversion.hpp"
   "expected.hpp"
+  "edge.hpp"
 )
 
 list(APPEND sources 
   "frame_conversion.cpp"
+  "edge.cpp"
   ${interfaces}
 )
 
