@@ -1,7 +1,8 @@
 FROM ubuntu:16.04 as build
 ADD bootstrap.sh .
-ADD conanfile.py .
 RUN ./bootstrap.sh 
+
+ADD conanfile.py .
 RUN conan install . -s compiler.libcxx=libstdc++11 --build=missing
 
 ADD . /project

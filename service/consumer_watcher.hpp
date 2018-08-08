@@ -2,24 +2,25 @@
 
 #include <functional>
 #include <regex>
-#include <unordered_map>
+#include <string>
+#include <vector>
+#include "is/msgs/common.pb.h"
 #include "is/wire/core.hpp"
 
 namespace is {
 
 class ConsumerWatcher {
-  using Callback = std::function<void(std::smatch const&)>;
-
-  std::regex expression;
-  std::unordered_map<std::string, int> ref_counts;
-  Callback new_consumer;
-  Callback no_consumers;
+  std::vector<std::pair<std::string, common::ConsumerInfo>> _consumers;
+  //  (path, consumer) -> void
+  std::function<void(std::string const&, std::string const&)> _new_consumer;
+  //  (path) -> void
+  std::function<void(std::string const&)> _no_consumers;
 
  public:
-  ConsumerWatcher(Subscription&);
-
-  void on(std::regex const&, Callback const& new_consumer, Callback const& no_consumers);
-  auto eval(Message const&) -> bool;
+  ConsumerWatcher(Subscription*);
+  void on_new_consumer(std::function<void(std::string const&, std::string const&)> const& callback);
+  void on_no_consumers(std::function<void(std::string const&)> const& callback);
+  auto run(Message const&) -> bool;
 };
 
-}
+}  // namespace is

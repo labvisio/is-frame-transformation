@@ -19,18 +19,18 @@ auto DependencyTracker::update_dependency(Path const& path) -> boost::optional<c
   if (!route) {
     for (auto&& vertex : path) {
       unresolved_dependencies[vertex].insert(path);
-      info("[DependencyTracker][+][Unresolved] {}: {}", vertex, path);
+      info("[DependencyTracker][+][Unresolved] key={} value={}", vertex, path);
     }
     return boost::none;
   }
 
   direct_dependencies[path] = *route;
-  info("[DependencyTracker][+][Direct] {}: {}", path, *route);
+  info("[DependencyTracker][+][Direct] key={} value={}", path, *route);
 
   auto insert_each_edge = [&](int64_t from, int64_t to) {
     auto edge = sorted(Edge{from, to});
     reverse_dependencies[edge].insert(path);
-    info("[DependencyTracker][+][Reverse] {}: {}", edge, path);
+    info("[DependencyTracker][+][Reverse] key={} value={}", edge, path);
   };
   adjacent_for_each(route->begin(), route->end(), insert_each_edge);
 
@@ -45,18 +45,18 @@ void DependencyTracker::remove_dependency(Path const& path) {
       auto reverse_it = reverse_dependencies.find(edge);
       assert(reverse_it != reverse_dependencies.end());
       reverse_it->second.erase(path);
-      info("[DependencyTracker][-][Reverse] {}: {}", edge, path);
+      info("[DependencyTracker][-][Reverse] key={} value={}", edge, path);
     };
     adjacent_for_each(direct_it->second.begin(), direct_it->second.end(), remove_each_edge);
 
     direct_dependencies.erase(direct_it);
-    info("[DependencyTracker][-][Direct] {}", path);
+    info("[DependencyTracker][-][Direct] key={}", path);
   } else {
     for (auto&& vertex : path) {
       auto unresolved_it = unresolved_dependencies.find(vertex);
       if (unresolved_it != unresolved_dependencies.end()) {
         unresolved_it->second.erase(path);
-        info("[DependencyTracker][-][Unresolved] {}: {}", vertex, path);
+        info("[DependencyTracker][-][Unresolved] key={} value={}", vertex, path);
       }
     }
   }

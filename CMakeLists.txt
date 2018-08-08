@@ -21,10 +21,14 @@ add_executable(service.bin
   service/service.cpp 
   service/utils.hpp 
   service/utils.cpp 
+  service/calibration_server.hpp
+  service/calibration_server.cpp
   service/consumer_watcher.hpp
   service/consumer_watcher.cpp
   service/dependency_tracker.hpp
   service/dependency_tracker.cpp
+  service/transformation_publisher.hpp
+  service/transformation_publisher.cpp
   ${options_src}
   ${options_hdr}
 )
@@ -44,4 +48,4 @@ target_include_directories(
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> # for generated files in build mode
 )
 
-set_property(TARGET service.bin PROPERTY CXX_STANDARD 11)
+set_property(TARGET service.bin PROPERTY CXX_STANDARD 14)
