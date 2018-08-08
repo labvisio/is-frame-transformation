@@ -22,8 +22,15 @@ class FrameConversion {
   Graph graph;
   std::unordered_map<int64_t, Vertex> vertices;
 
+
+  auto has_vertex(int64_t id) const -> bool; 
+  auto get_vertex(int64_t id) const -> Vertex;
   auto add_vertex(int64_t id) -> Vertex;
+  void remove_vertex(int64_t);
+
   void add_edge(Edge const&, float weight = 1.0);
+  void remove_edge(Edge const&);
+
   void update_transformation(Edge const&, common::Tensor const&);
   void remove_transformation(Edge const&);
 
@@ -33,6 +40,8 @@ class FrameConversion {
   FrameConversion(FrameConversion&&) = default;
 
   void update_transformation(vision::FrameTransformation const&);
+  void remove_transformation(vision::FrameTransformation const&);
+
   // Try to find shortest path that connects the two given vertices
   auto find_path(Edge const&) const -> nonstd::expected<Path, std::string>;
   // Try to find shortest path that connects all the vertices
