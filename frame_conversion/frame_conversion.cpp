@@ -58,6 +58,11 @@ void FrameConversion::remove_edge(Edge const& edge) {
   boost::remove_edge(get_vertex(sorted_edge.from), get_vertex(sorted_edge.to), graph);
 }
 
+auto FrameConversion::transformations() const
+    -> std::unordered_map<Edge, common::Tensor, EdgeHash> const& {
+  return tensors;
+}
+
 void FrameConversion::update_transformation(vision::FrameTransformation const& transformation) {
   update_transformation(Edge{transformation.from(), transformation.to()}, transformation.tf());
 }
@@ -149,7 +154,7 @@ auto FrameConversion::compose_path(Path const& path) const -> common::Tensor {
 
   auto tf = cv::Mat::eye(4, 4, CV_64F);
 
-  adjacent_for_each(path.begin() + 1, path.end(), [&](int64_t from, int64_t to) {
+  adjacent_for_each(path.begin(), path.end(), [&](int64_t from, int64_t to) {
     auto tensor = tensors.find(Edge{from, to});
     assert(tensor != tensors.end() && "Edge exists but tensor not found");
     tf = is::to_mat(tensor->second) * tf;

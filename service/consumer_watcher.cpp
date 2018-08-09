@@ -54,7 +54,7 @@ auto ConsumerWatcher::run(Message const& msg) -> bool {
   std::set_difference(old_topics.begin(), old_topics.end(), new_topics.begin(), new_topics.end(),
                       std::inserter(deleted, deleted.begin()));
   for (auto const& topic : deleted) {
-    is::info("[ConsumerWatcher][-] topic='{}'", topic);
+    is::info("source=ConsumerWatcher, event=NoConsumers, topic={}", topic);
     _no_consumers(topic);
   }
 
@@ -62,7 +62,7 @@ auto ConsumerWatcher::run(Message const& msg) -> bool {
   std::set_difference(new_topics.begin(), new_topics.end(), old_topics.begin(), old_topics.end(),
                       std::inserter(created, created.begin()));
   for (auto const& topic : created) {
-    is::info("[ConsumerWatcher][+] topic='{}'", topic);
+    is::info("source=ConsumerWatcher, event=NewConsumer, topic={}", topic);
     _new_consumer(topic, topic);
   }
 
@@ -87,7 +87,7 @@ auto ConsumerWatcher::run(Message const& msg) -> bool {
                         std::inserter(added, added.begin()));
 
     for (auto const& consumer : added) {
-      is::info("[ConsumerWatcher][+] topic='{}' consumer='{}'", topic, consumer);
+      is::info("source=ConsumerWatcher, event=NewConsumer, topic={} consumer={}", topic, consumer);
       _new_consumer(topic, consumer);
     }
   }

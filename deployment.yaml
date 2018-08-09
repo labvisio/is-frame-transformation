@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: service 
-        image: viros/is-frame-conversion:0.0.2
+        image: viros/is-frame-conversion:0.0.3
         command: ["/service.bin"]
         args: ["/opt/options/options.json"]
         imagePullPolicy: Always

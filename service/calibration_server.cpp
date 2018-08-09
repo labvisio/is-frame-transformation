@@ -11,18 +11,20 @@ auto load_calibrations(std::string const& folder) -> std::vector<vision::CameraC
   std::vector<is::vision::CameraCalibration> calibrations;
 
   if (!fs::is_directory(folder)) {
-    is::warn("[LoadCalibrations] Unable to load calibrations, path \"{}\" is not a directory",
+    is::warn("source=CalibrationServer, event=LoadFailed, path={}, error='not a directory'",
              folder);
     return calibrations;
   }
 
   for (auto& entry : boost::make_iterator_range(fs::directory_iterator(folder), {})) {
     is::vision::CameraCalibration calibration;
-    auto status = is::load(entry.path().string(), &calibration);
+    auto file = entry.path().string();
+    auto status = is::load(file, &calibration);
     if (status.code() == is::wire::StatusCode::OK) {
       calibrations.push_back(calibration);
     } else {
-      is::warn("[LoadCalibrations] Failed to load file: {}", status.why());
+      is::warn("source=CalibrationServer, event=LoadFailed, file={}, error='{}'", file,
+               status.why());
     }
   }
   return calibrations;
@@ -31,7 +33,7 @@ auto load_calibrations(std::string const& folder) -> std::vector<vision::CameraC
 CalibrationServer::CalibrationServer(std::string const& path) {
   for (auto const& calibration : load_calibrations(path)) {
     _calibrations[calibration.id()] = calibration;
-    is::info("[CalibrationServer][+] id={}", calibration.id());
+    is::info("source=CalibrationServer, event=NewCalibration, id={}", calibration.id());
   }
 }
 

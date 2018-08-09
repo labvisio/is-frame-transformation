@@ -26,7 +26,6 @@ int main(int argc, char* argv[]) {
   server.add_interceptor(logs);
 
   auto calibs = is::CalibrationServer{options.calibrations_path()};
-
   server.delegate<is::vision::GetCalibrationRequest, is::vision::GetCalibrationReply>(
       service + ".GetCalibration", [&](auto* ctx, auto const& request, auto* reply) {
         return calibs.get_calibration(ctx, request, reply);
@@ -39,7 +38,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  auto tracker = is::DependencyTracker{&conversions};  // conversions must outlive the tracker
+  auto tracker = is::DependencyTracker{&conversions};
 
   // Watch consumers of this service and updates the dependency tracker.
   auto watcher = is::ConsumerWatcher{&subscription};
@@ -64,7 +63,7 @@ int main(int argc, char* argv[]) {
       [&](std::string const& topic) { tracker.remove_dependency(create_path(topic)); });
 
   auto transformation_publisher =
-      is::TransformationPublisher{channel, &subscription, tracer, &tracker};
+      is::TransformationPublisher{channel, &subscription, tracer, &tracker, &conversions};
 
   for (;;) {
     auto message = channel.consume();

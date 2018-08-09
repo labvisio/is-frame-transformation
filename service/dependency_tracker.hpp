@@ -20,19 +20,17 @@ class DependencyTracker {
   */
   std::unordered_map<Edge, std::unordered_set<Path, PathHash>, EdgeHash> reverse_dependencies;
 
-  /* Keep track of paths that we were unable to solve for each node. e.g
-  (if user requests Path{1->2} and we are unable to solve it)
-    1: [ Path{1->2} ]
-    2: [ Path{1->2} ]
-  */
-  std::unordered_map<int64_t, std::unordered_set<Path, PathHash>> unresolved_dependencies;
+  // Keep track of paths that we were unable to solve.
+  std::unordered_set<Path, PathHash> unresolved_dependencies;
+
+  // Transformation graph solver.
   FrameConversion* conversions;
 
   template <typename F>
-  void check_unresolved_dependencies(int64_t id, F const& on_update);
+  void check_unresolved_dependencies(F const& on_update);
 
  public:
-  DependencyTracker(FrameConversion*);
+  DependencyTracker(FrameConversion* conversions);
 
   auto update_dependency(Path const&) -> boost::optional<common::Tensor>;
   void remove_dependency(Path const&);
@@ -51,42 +49,29 @@ void DependencyTracker::update(vision::FrameTransformation const& tf, F const& o
   if (reverse_it != reverse_dependencies.end()) {
     // Update each dependent path
     for (auto path : reverse_it->second) {
-      auto direct_it = direct_dependencies.find(path);
-      assert(direct_it != direct_dependencies.end() &&
-             "Invalid state reverse dependency point to non existing direct dependency");
-      on_update(direct_it->first, conversions->compose_path(direct_it->second));
+      auto maybe_tensor = update_dependency(path);
+      // if no route was found this iterator was invalidated leave for now. 
+      if (!maybe_tensor) break;
+      on_update(path, *maybe_tensor); 
     }
   }
 
-  // Check both nodes for unresolved dependencies
-  check_unresolved_dependencies(tf.from(), on_update);
-  check_unresolved_dependencies(tf.to(), on_update);
+  check_unresolved_dependencies(on_update);
 }
 
 template <typename F>
-void DependencyTracker::check_unresolved_dependencies(int64_t id, F const& on_update) {
-  // TODO: This procedure only works for cases where a vertex does not exist. It will not be enough
-  // for cases where there is no path and an update causes it to exist. For this last case, an
-  // update will be triggered only when one of the outer vertices change.
-
-  auto unresolved_it = unresolved_dependencies.find(id);
-  // If this node has unresolved dependencies.
-  if (unresolved_it != unresolved_dependencies.end()) {
-    auto& unresolved = unresolved_it->second;
-
-    // For each unresolved dependency/path.
-    for (auto path = unresolved.begin(); path != unresolved.end();) {
-      // Try to find path
-      auto solution = conversions->find_path(*path);
-      if (solution) {
-        info("[DependencyTracker][Resolved] {}", *path);
-        // TODO: Avoid recomputing the solution
-        update_dependency(*path);
-        on_update(*path, conversions->compose_path(*solution));
-        path = unresolved.erase(path);
-      } else {
-        ++path;
-      }
+void DependencyTracker::check_unresolved_dependencies(F const& on_update) {
+  for (auto unresolved_it = unresolved_dependencies.begin();
+       unresolved_it != unresolved_dependencies.end();) {
+    auto solution = conversions->find_path(*unresolved_it);
+    if (solution) {
+      info("source=DependencyTracker, event=Resolved, key={}", *unresolved_it);
+      // TODO: Avoid recomputing the solution
+      update_dependency(*unresolved_it);
+      on_update(*unresolved_it, conversions->compose_path(*solution));
+      unresolved_it = unresolved_dependencies.erase(unresolved_it);
+    } else {
+      ++unresolved_it;
     }
   }
 }
