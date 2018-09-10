@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: is-frame-conversion-config
+  name: is-frame-transformation-config
   namespace: default
 data:
   config: |-
@@ -15,17 +15,17 @@ data:
 apiVersion: extensions/v1beta1 
 kind: Deployment
 metadata:
-  name: "is-frame-conversion"
+  name: "is-frame-transformation"
 spec:
   replicas: 1 
   template:
     metadata:
       labels:
-        app: is-frame-conversion
+        app: is-frame-transformation
     spec:
       containers:
       - name: service 
-        image: viros/is-frame-conversion:0.0.3
+        image: viros/is-frame-transformation:0.0.3
         command: ["/service.bin"]
         args: ["/opt/options/options.json"]
         imagePullPolicy: Always
@@ -41,7 +41,7 @@ spec:
       volumes:
       - name: options
         configMap:
-          name: is-frame-conversion-config
+          name: is-frame-transformation-config
           items:
           - key: config
             path: options.json

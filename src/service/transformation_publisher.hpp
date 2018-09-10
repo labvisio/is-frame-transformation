@@ -4,6 +4,7 @@
 #include <vector>
 #include "dependency_tracker.hpp"
 #include "is/wire/core.hpp"
+#include "is/msgs/camera.pb.h"
 
 namespace is {
 
@@ -14,10 +15,8 @@ class TransformationPublisher {
   FrameConversion* _conversions;
 
   // Used to throttle message publication
-  static constexpr auto throttle_interval = std::chrono::milliseconds(100);
-  std::unordered_map<std::string, common::Tensor> _tensors;
-  std::chrono::system_clock::time_point _publish_deadline =
-      std::chrono::system_clock::now() + throttle_interval;
+  std::chrono::system_clock::time_point _publish_deadline;
+  std::unordered_map<std::string, vision::FrameTransformation> _tensors;
 
   // create topic from ids
   auto create_topic(is::Path const& ids) -> std::string;

@@ -17,14 +17,13 @@ auto load_calibrations(std::string const& folder) -> std::vector<vision::CameraC
   }
 
   for (auto& entry : boost::make_iterator_range(fs::directory_iterator(folder), {})) {
-    is::vision::CameraCalibration calibration;
     auto file = entry.path().string();
-    auto status = is::load(file, &calibration);
-    if (status.code() == is::wire::StatusCode::OK) {
+    try {
+      is::vision::CameraCalibration calibration;
+      is::load(file, &calibration);
       calibrations.push_back(calibration);
-    } else {
-      is::warn("source=CalibrationServer, event=LoadFailed, file={}, error='{}'", file,
-               status.why());
+    } catch (std::runtime_error const& e) {
+      is::warn("source=CalibrationServer, event=LoadFailed, file={}, error='{}'", file, e.what());
     }
   }
   return calibrations;

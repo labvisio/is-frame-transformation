@@ -43,7 +43,7 @@ auto FrameConversion::add_vertex(int64_t id) -> Vertex {
 }
 
 void FrameConversion::remove_vertex(int64_t) {
-  assert(false && "Not implemented");
+  throw std::runtime_error{"Method not implemented"};
 }
 
 void FrameConversion::add_edge(Edge const& edge, float weight) {
@@ -53,8 +53,9 @@ void FrameConversion::add_edge(Edge const& edge, float weight) {
 
 void FrameConversion::remove_edge(Edge const& edge) {
   auto sorted_edge = sorted(edge);
-  assert(has_vertex(sorted_edge.from) && has_vertex(sorted_edge.to) &&
-         "Trying to remove an edge from vertices that do not exist");
+  if (!has_vertex(sorted_edge.from) || !has_vertex(sorted_edge.to)) {
+    throw std::logic_error{"Trying to remove an edge from vertices that do not exist"};
+  }
   boost::remove_edge(get_vertex(sorted_edge.from), get_vertex(sorted_edge.to), graph);
 }
 
@@ -93,10 +94,10 @@ void FrameConversion::remove_transformation(Edge const& edge) {
 
 auto FrameConversion::find_path(Edge const& edge) const -> nonstd::expected<Path, std::string> {
   if (!has_vertex(edge.from)) {
-    return nonstd::make_unexpected(fmt::format("Invalid frame \"{}\"", edge.from));
+    return nonstd::make_unexpected(fmt::format("Invalid frame id \"{}\"", edge.from));
   }
   if (!has_vertex(edge.to)) {
-    return nonstd::make_unexpected(fmt::format("Invalid frame \"{}\"", edge.to));
+    return nonstd::make_unexpected(fmt::format("Invalid frame id \"{}\"", edge.to));
   }
 
   auto from = get_vertex(edge.from);
@@ -120,7 +121,9 @@ auto FrameConversion::find_path(Edge const& edge) const -> nonstd::expected<Path
 }
 
 auto FrameConversion::find_path(Path const& p) const -> nonstd::expected<Path, std::string> {
-  assert(p.size() >= 2 && "Path size must be atleast 2");
+  if (p.size() < 2) {
+    throw std::invalid_argument{"A transformation path must contain atleast 2 ids"};
+  }
   auto subpaths = std::vector<nonstd::expected<Path, std::string>>{};
 
   auto find_each_subpath = [this](int64_t from, int64_t to) { return find_path(Edge{from, to}); };
@@ -150,17 +153,20 @@ auto FrameConversion::find_path(Path const& p) const -> nonstd::expected<Path, s
 }
 
 auto FrameConversion::compose_path(Path const& path) const -> common::Tensor {
-  assert(path.size() >= 2 && "Path size must be atleast 2");
+  if (path.size() < 2) {
+    throw std::invalid_argument{"A transformation path must contain atleast 2 ids"};
+  }
 
   auto tf = cv::Mat::eye(4, 4, CV_64F);
-
   adjacent_for_each(path.begin(), path.end(), [&](int64_t from, int64_t to) {
     auto tensor = tensors.find(Edge{from, to});
-    assert(tensor != tensors.end() && "Edge exists but tensor not found");
+    if (tensor == tensors.end()) {
+      throw std::logic_error{"Transformation exists but no tensor found"};
+    }
     tf = is::to_mat(tensor->second) * tf;
   });
 
   return is::to_tensor(tf);
-}
+}  // namespace is
 
 }  // namespace is

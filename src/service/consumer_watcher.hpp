@@ -9,6 +9,8 @@
 
 namespace is {
 
+/* Watches BrokerEvents for new/no consumers on topics with the FrameTransformation.<IDs...>
+ * pattern*/
 class ConsumerWatcher {
   std::vector<std::pair<std::string, common::ConsumerInfo>> _consumers;
   //  (path, consumer) -> void

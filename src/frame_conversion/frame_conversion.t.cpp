@@ -83,11 +83,11 @@ TEST(FrameConversion, Interface) {
   // -> Using edges
   path = conversions.find_path(is::Edge{3000, 1000});
   ASSERT_FALSE(path);
-  ASSERT_EQ(path.error(), "Invalid frame \"3000\"");
+  ASSERT_EQ(path.error(), "Invalid frame id \"3000\"");
 
   path = conversions.find_path(is::Edge{1000, 3000});
   ASSERT_FALSE(path);
-  ASSERT_EQ(path.error(), "Invalid frame \"3000\"");
+  ASSERT_EQ(path.error(), "Invalid frame id \"3000\"");
 
   path = conversions.find_path(is::Edge{1000, 1002});
   ASSERT_FALSE(path);
@@ -96,11 +96,11 @@ TEST(FrameConversion, Interface) {
   // -> Using paths
   path = conversions.find_path(is::Path{3000, 1000});
   ASSERT_FALSE(path);
-  ASSERT_EQ(path.error(), "Invalid frame \"3000\"");
+  ASSERT_EQ(path.error(), "Invalid frame id \"3000\"");
 
   path = conversions.find_path(is::Path{1000, 3000});
   ASSERT_FALSE(path);
-  ASSERT_EQ(path.error(), "Invalid frame \"3000\"");
+  ASSERT_EQ(path.error(), "Invalid frame id \"3000\"");
 
   path = conversions.find_path(is::Path{1000, 1002});
   ASSERT_FALSE(path);

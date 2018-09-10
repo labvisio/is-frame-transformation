@@ -9,7 +9,7 @@
 #include "expected.hpp"
 #include "is/msgs/camera.pb.h"
 #include "is/msgs/common.pb.h"
-#include "spdlog/spdlog.h"
+#include "fmt/format.h"
 
 namespace is {
 
