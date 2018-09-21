@@ -13,43 +13,51 @@ I adjacent_for_each(I first, I last, P&& predicate) {
 
 DependencyTracker::DependencyTracker(FrameConversion* c) : conversions(c) {}
 
-auto DependencyTracker::update_dependency(Path const& path) -> boost::optional<common::Tensor> {
+auto DependencyTracker::update_dependency(Path const& path)
+    -> boost::optional<vision::FrameTransformation> {
   auto had_route = direct_dependencies.find(path) != direct_dependencies.end();
   auto route = conversions->find_path(path);
 
+  auto maybe_transformation = boost::optional<vision::FrameTransformation>{};
+
   if (!route) {
     if (had_route) {
-      info("source=DependencyTracker, event=Unreachable, key={}", path);
+      info("event=Dependency.BecameUnreachable path={}", path);
       remove_dependency(path);
     }
+    auto it_and_ok = unresolved_dependencies.insert(path);
+    if (it_and_ok.second) { info("event=Dependency.AddUnresolved path={}", path); }
+  } else {
+    if (had_route) {
+      auto old_route = direct_dependencies.find(path)->second;
+      if (old_route != route) {
+        info("event=Dependency.NewRoute path={} route={}", path, *route);
+        // New route is different, remove the old one and add the new one
+        remove_dependency(path);
+        add_dependency(path, *route);
+      }
+    } else {
+      add_dependency(path, *route);
+    }
 
-    unresolved_dependencies.insert(path);
-    info("source=DependencyTracker, event=AddUnresolved, key={}", path);
-    return boost::none;
+    vision::FrameTransformation transformation;
+    transformation.set_from(path.front());
+    transformation.set_to(path.back());
+    *(transformation.mutable_tf()) = conversions->compose_path(*route);
+    maybe_transformation = transformation;
   }
+  return maybe_transformation;
+}
 
-  if (had_route) {
-    auto old_route = direct_dependencies.find(path)->second;
-    // If the new route is equal to the old we had compute tf and leave
-    if (old_route == route) { return conversions->compose_path(*route); }
-
-    // Else we have a new route remove the old one
-    info("source=DependencyTracker, event=NewRoute, key={}", path);
-    remove_dependency(path);
-  }
-
-  // Add the new route to our tracking data structures
-  direct_dependencies[path] = *route;
-  info("source=DependencyTracker, event=AddDirect, key={} value={}", path, *route);
-
+void DependencyTracker::add_dependency(Path const& path, Path const& route) {
+  // info("event=Dependency.AddDirect key={} value={}", path, route);
+  direct_dependencies[path] = route;
   auto insert_each_edge = [&](int64_t from, int64_t to) {
     auto edge = sorted(Edge{from, to});
+    // info("event=Dependency.AddReverse key={} value={}", edge, path);
     reverse_dependencies[edge].insert(path);
-    info("source=DependencyTracker, event=AddReverse, key={} value={}", edge, path);
   };
-  adjacent_for_each(route->begin(), route->end(), insert_each_edge);
-
-  return conversions->compose_path(*route);
+  adjacent_for_each(route.begin(), route.end(), insert_each_edge);
 }
 
 void DependencyTracker::remove_dependency(Path const& path) {
@@ -58,9 +66,9 @@ void DependencyTracker::remove_dependency(Path const& path) {
     auto remove_each_edge = [&](int64_t from, int64_t to) {
       auto edge = sorted(Edge{from, to});
       auto reverse_it = reverse_dependencies.find(edge);
-      assert(reverse_it != reverse_dependencies.end());
+      if (reverse_it == reverse_dependencies.end()) { critical("?"); }
       reverse_it->second.erase(path);
-      info("source=DependencyTracker, event=DelReverse, key={} value={}", edge, path);
+      // info("event=Dependency.DelReverse key={} value={}", edge, path);
     };
 
     // Remove each edge of the reverse dependencies
@@ -69,11 +77,11 @@ void DependencyTracker::remove_dependency(Path const& path) {
 
     // Remove the direct dependency
     direct_dependencies.erase(direct_it);
-    info("source=DependencyTracker, event=DelDirect, key={}", path);
+    // info("event=Dependency.DelDirect key={}", path);
   } else {
     // Remove from the unresolved dependencies
     unresolved_dependencies.erase(path);
-    info("source=DependencyTracker, event=DelUnresolved, key={}", path);
+    // info("event=Dependency.DelUnresolved key={}", path);
   }
 }
 

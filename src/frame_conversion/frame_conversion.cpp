@@ -92,12 +92,12 @@ void FrameConversion::remove_transformation(Edge const& edge) {
   // TODO: remove_vertex when there is no edges to it
 }
 
-auto FrameConversion::find_path(Edge const& edge) const -> nonstd::expected<Path, std::string> {
+auto FrameConversion::find_path(Edge const& edge) const -> expected<Path, std::string> {
   if (!has_vertex(edge.from)) {
-    return nonstd::make_unexpected(fmt::format("Invalid frame id \"{}\"", edge.from));
+    return make_unexpected(fmt::format("Invalid frame id \"{}\"", edge.from));
   }
   if (!has_vertex(edge.to)) {
-    return nonstd::make_unexpected(fmt::format("Invalid frame id \"{}\"", edge.to));
+    return make_unexpected(fmt::format("Invalid frame id \"{}\"", edge.to));
   }
 
   auto from = get_vertex(edge.from);
@@ -111,7 +111,7 @@ auto FrameConversion::find_path(Edge const& edge) const -> nonstd::expected<Path
   while (from != to) {
     auto next = predecessors[from];
     if (next == from)
-      return nonstd::make_unexpected(
+      return make_unexpected(
           fmt::format("Frames \"{}\" and \"{}\" are not connected", edge.from, edge.to));
     path.push_back(graph[from]);
     from = next;
@@ -120,11 +120,11 @@ auto FrameConversion::find_path(Edge const& edge) const -> nonstd::expected<Path
   return path;
 }
 
-auto FrameConversion::find_path(Path const& p) const -> nonstd::expected<Path, std::string> {
+auto FrameConversion::find_path(Path const& p) const -> expected<Path, std::string> {
   if (p.size() < 2) {
     throw std::invalid_argument{"A transformation path must contain atleast 2 ids"};
   }
-  auto subpaths = std::vector<nonstd::expected<Path, std::string>>{};
+  auto subpaths = std::vector<expected<Path, std::string>>{};
 
   auto find_each_subpath = [this](int64_t from, int64_t to) { return find_path(Edge{from, to}); };
   auto ok = adjacent_transform_if(p.begin(), p.end(), std::back_inserter(subpaths),
@@ -133,11 +133,9 @@ auto FrameConversion::find_path(Path const& p) const -> nonstd::expected<Path, s
   if (!ok) return subpaths.back();
 
   auto concatenated = Path{};
-  auto overall_size =
-      std::accumulate(subpaths.begin(), subpaths.end(), 0,
-                      [](int total, nonstd::expected<Path, std::string> const& path) {
-                        return total + path->size();
-                      });
+  auto overall_size = std::accumulate(
+      subpaths.begin(), subpaths.end(), 0,
+      [](int total, expected<Path, std::string> const& path) { return total + path->size(); });
   concatenated.reserve(overall_size);
 
   auto first = subpaths.begin();

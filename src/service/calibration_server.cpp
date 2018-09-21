@@ -1,8 +1,8 @@
 
 #include "calibration_server.hpp"
-#include "boost/filesystem.hpp"
-#include "boost/range.hpp"
-#include "is/msgs/io.hpp"
+#include <boost/filesystem.hpp>
+#include <boost/range.hpp>
+#include <is/msgs/io.hpp>
 
 namespace is {
 
@@ -11,8 +11,7 @@ auto load_calibrations(std::string const& folder) -> std::vector<vision::CameraC
   std::vector<is::vision::CameraCalibration> calibrations;
 
   if (!fs::is_directory(folder)) {
-    is::warn("source=CalibrationServer, event=LoadFailed, path={}, error='not a directory'",
-             folder);
+    is::warn("source=CalibrationServer event=LoadFailed path={} error='not a directory'", folder);
     return calibrations;
   }
 
@@ -23,7 +22,7 @@ auto load_calibrations(std::string const& folder) -> std::vector<vision::CameraC
       is::load(file, &calibration);
       calibrations.push_back(calibration);
     } catch (std::runtime_error const& e) {
-      is::warn("source=CalibrationServer, event=LoadFailed, file={}, error='{}'", file, e.what());
+      is::warn("source=CalibrationServer event=LoadFailed file={} error='{}'", file, e.what());
     }
   }
   return calibrations;
@@ -32,7 +31,7 @@ auto load_calibrations(std::string const& folder) -> std::vector<vision::CameraC
 CalibrationServer::CalibrationServer(std::string const& path) {
   for (auto const& calibration : load_calibrations(path)) {
     _calibrations[calibration.id()] = calibration;
-    is::info("source=CalibrationServer, event=NewCalibration, id={}", calibration.id());
+    is::info("source=CalibrationServer event=NewCalibration id={}", calibration.id());
   }
 }
 

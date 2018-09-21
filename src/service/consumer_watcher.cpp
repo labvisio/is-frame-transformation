@@ -1,7 +1,8 @@
 #include "consumer_watcher.hpp"
 #include <algorithm>
+#include <is/msgs/utils.hpp>
+#include <is/wire/core/logger.hpp>
 #include <iterator>
-#include "is/wire/core/logger.hpp"
 
 namespace is {
 
@@ -11,15 +12,15 @@ ConsumerWatcher::ConsumerWatcher(Subscription* subscription) {
 
 void ConsumerWatcher::on_new_consumer(
     std::function<void(std::string const&, std::string const&)> const& callback) {
-  _new_consumer = callback;
+  new_consumer = callback;
 }
 
 void ConsumerWatcher::on_no_consumers(std::function<void(std::string const&)> const& callback) {
-  _no_consumers = callback;
+  no_consumers = callback;
 }
 
-auto ConsumerWatcher::run(Message const& msg) -> bool {
-  if (msg.topic() != "BrokerEvents.Consumers") return false;
+void ConsumerWatcher::run(Message const& msg) {
+  if (msg.topic() != "BrokerEvents.Consumers") { return; }
   auto new_info = msg.unpack<common::ConsumerList>()->info();
 
   using ConsumerVector = std::vector<std::pair<std::string, common::ConsumerInfo>>;
@@ -48,22 +49,22 @@ auto ConsumerWatcher::run(Message const& msg) -> bool {
   };
 
   auto new_topics = create_topic_projection(new_consumers);
-  auto old_topics = create_topic_projection(_consumers);
+  auto old_topics = create_topic_projection(consumers);
 
   auto deleted = std::vector<std::string>{};
   std::set_difference(old_topics.begin(), old_topics.end(), new_topics.begin(), new_topics.end(),
                       std::inserter(deleted, deleted.begin()));
   for (auto const& topic : deleted) {
-    is::info("source=ConsumerWatcher, event=NoConsumers, topic={}", topic);
-    _no_consumers(topic);
+    is::info("source=ConsumerWatcher event=NoConsumers topic={}", topic);
+    no_consumers(topic);
   }
 
   auto created = std::vector<std::string>{};
   std::set_difference(new_topics.begin(), new_topics.end(), old_topics.begin(), old_topics.end(),
                       std::inserter(created, created.begin()));
   for (auto const& topic : created) {
-    is::info("source=ConsumerWatcher, event=NewConsumer, topic={}", topic);
-    _new_consumer(topic, topic);
+    is::info("source=ConsumerWatcher event=NewConsumer topic={}", topic);
+    new_consumer(topic, topic);
   }
 
   auto intersection = std::vector<std::string>{};
@@ -72,9 +73,9 @@ auto ConsumerWatcher::run(Message const& msg) -> bool {
 
   for (auto const& topic : intersection) {
     auto comparator = [](auto const& l, auto const& r) { return l.first < r; };
-    auto old = std::lower_bound(_consumers.begin(), _consumers.end(), topic, comparator);
+    auto old = std::lower_bound(consumers.begin(), consumers.end(), topic, comparator);
     auto now = std::lower_bound(new_consumers.begin(), new_consumers.end(), topic, comparator);
-    assert(now != new_consumers.end() && old != _consumers.end());
+    assert(now != new_consumers.end() && old != consumers.end());
 
     auto oldc = old->second.mutable_consumers();
     std::sort(oldc->begin(), oldc->end());
@@ -87,12 +88,12 @@ auto ConsumerWatcher::run(Message const& msg) -> bool {
                         std::inserter(added, added.begin()));
 
     for (auto const& consumer : added) {
-      is::info("source=ConsumerWatcher, event=NewConsumer, topic={} consumer={}", topic, consumer);
-      _new_consumer(topic, consumer);
+      is::info("source=ConsumerWatcher event=NewConsumer topic={} consumer={}", topic, consumer);
+      new_consumer(topic, consumer);
     }
   }
-  _consumers = new_consumers;
-  return true;
+
+  consumers = new_consumers;
 }
 
 }  // namespace is

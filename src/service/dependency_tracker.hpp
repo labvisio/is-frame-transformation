@@ -1,10 +1,11 @@
 #pragma once
 
+#include <is/msgs/camera.pb.h>
+#include <is/wire/core/logger.hpp>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "frame_conversion/frame_conversion.hpp"
-#include "is/wire/core/logger.hpp"
 
 namespace is {
 
@@ -29,10 +30,12 @@ class DependencyTracker {
   template <typename F>
   void check_unresolved_dependencies(F const& on_update);
 
+  void add_dependency(Path const& path, Path const& route);
+
  public:
   DependencyTracker(FrameConversion* conversions);
 
-  auto update_dependency(Path const&) -> boost::optional<common::Tensor>;
+  auto update_dependency(Path const&) -> boost::optional<vision::FrameTransformation>;
   void remove_dependency(Path const&);
 
   template <typename F>
@@ -47,12 +50,13 @@ void DependencyTracker::update(vision::FrameTransformation const& tf, F const& o
   // Find all paths that depend on this edge
   auto reverse_it = reverse_dependencies.find(sorted(edge));
   if (reverse_it != reverse_dependencies.end()) {
+    // Copy the paths since an update can modify reverse_dependencies and thus invalidate our
+    // iterator
+    std::vector<Path> paths(reverse_it->second.begin(), reverse_it->second.end());
     // Update each dependent path
-    for (auto path : reverse_it->second) {
-      auto maybe_tensor = update_dependency(path);
-      // if no route was found this iterator was invalidated leave for now. 
-      if (!maybe_tensor) break;
-      on_update(path, *maybe_tensor); 
+    for (auto&& path : paths) {
+      auto maybe_transformation = update_dependency(path);
+      if (maybe_transformation) { on_update(path, *maybe_transformation); }
     }
   }
 
@@ -61,17 +65,14 @@ void DependencyTracker::update(vision::FrameTransformation const& tf, F const& o
 
 template <typename F>
 void DependencyTracker::check_unresolved_dependencies(F const& on_update) {
-  for (auto unresolved_it = unresolved_dependencies.begin();
-       unresolved_it != unresolved_dependencies.end();) {
-    auto solution = conversions->find_path(*unresolved_it);
-    if (solution) {
-      info("source=DependencyTracker, event=Resolved, key={}", *unresolved_it);
-      // TODO: Avoid recomputing the solution
-      update_dependency(*unresolved_it);
-      on_update(*unresolved_it, conversions->compose_path(*solution));
-      unresolved_it = unresolved_dependencies.erase(unresolved_it);
-    } else {
-      ++unresolved_it;
+  std::vector<Path> paths(unresolved_dependencies.begin(), unresolved_dependencies.end());
+
+  for (auto&& path : paths) {
+    auto maybe_transformation = update_dependency(path);
+    if (maybe_transformation) {
+      info("event=Dependency.Resolved key={}", path);
+      on_update(path, *maybe_transformation);
+      unresolved_dependencies.erase(path);
     }
   }
 }

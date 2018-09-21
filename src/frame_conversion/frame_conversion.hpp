@@ -6,12 +6,14 @@
 #include "boost/graph/graph_traits.hpp"
 #include "boost/optional.hpp"
 #include "edge.hpp"
-#include "expected.hpp"
+#include "tl/expected.hpp"
+#include "fmt/format.h"
 #include "is/msgs/camera.pb.h"
 #include "is/msgs/common.pb.h"
-#include "fmt/format.h"
 
 namespace is {
+
+using namespace tl;
 
 class FrameConversion {
   using Graph = boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS, int64_t,
@@ -44,9 +46,9 @@ class FrameConversion {
   auto transformations() const -> std::unordered_map<Edge, common::Tensor, EdgeHash> const&;
 
   // Try to find shortest path that connects the two given vertices
-  auto find_path(Edge const&) const -> nonstd::expected<Path, std::string>;
+  auto find_path(Edge const&) const -> expected<Path, std::string>;
   // Try to find shortest path that connects all the vertices
-  auto find_path(Path const&) const -> nonstd::expected<Path, std::string>;
+  auto find_path(Path const&) const -> expected<Path, std::string>;
   // Compose all the transformations on the given path resulting in a single transformation
   auto compose_path(Path const&) const -> common::Tensor;
 };

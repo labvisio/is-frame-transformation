@@ -1,5 +1,4 @@
 #include <zipkin/opentracing.h>
-#include <backward.hpp>
 #include <boost/algorithm/string.hpp>
 #include <is/msgs/utils.hpp>
 #include <is/wire/core.hpp>
@@ -11,10 +10,6 @@
 #include "dependency_tracker.hpp"
 #include "frame_conversion/frame_conversion.hpp"
 #include "transformation_publisher.hpp"
-
-namespace backward {
-backward::SignalHandling sh;
-}  // namespace backward
 
 auto load_configuration(int argc, char** argv) -> is::FrameConversionServiceOptions {
   auto filename = (argc == 2) ? argv[1] : "options.json";
@@ -81,8 +76,9 @@ int main(int argc, char* argv[]) {
   };
 
   watcher.on_new_consumer([&](std::string const& topic, std::string const& consumer) {
-    auto maybe_tf = tracker.update_dependency(create_path(topic));
-    if (maybe_tf) { channel.publish(consumer, is::Message{*maybe_tf}); }
+    auto path = create_path(topic);
+    auto maybe_transformation = tracker.update_dependency(path);
+    if (maybe_transformation) { channel.publish(consumer, is::Message{*maybe_transformation}); }
   });
 
   watcher.on_no_consumers(
@@ -91,10 +87,13 @@ int main(int argc, char* argv[]) {
   auto transformation_publisher =
       is::TransformationPublisher{channel, &subscription, tracer, &tracker, &conversions};
 
+  auto deadline = std::chrono::system_clock::now() + std::chrono::seconds(1);
   for (;;) {
-    auto message = channel.consume();
-    auto ok = transformation_publisher.run(message);
-    if (!ok) ok = watcher.run(message);
-    if (!ok) ok = server.serve(message);
+    auto maybe_message = channel.consume_until(deadline);
+    deadline = transformation_publisher.run(maybe_message);
+    if (maybe_message) {
+      watcher.run(*maybe_message);
+      server.serve(*maybe_message);
+    }
   }
 }

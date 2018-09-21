@@ -2,17 +2,17 @@ cmake_minimum_required(VERSION 3.10.0)
 
 include(GNUInstallDirs)
 
-find_package(boost REQUIRED)
+find_package(Boost REQUIRED graph)
 find_package(is-msgs REQUIRED)
 find_package(opencv REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(expected REQUIRED)
 
 set(author "is")
 set(module "frame-conversion")
 
 list(APPEND interfaces
   "frame_conversion.hpp"
-  "expected.hpp"
   "edge.hpp"
 )
 
@@ -44,8 +44,9 @@ target_link_libraries(
  PRIVATE
   spdlog::spdlog
  PUBLIC
+  expected::expected
   is-msgs::is-msgs
-  boost::boost
+  Boost::graph
   opencv::opencv
   zlib::zlib
 )
