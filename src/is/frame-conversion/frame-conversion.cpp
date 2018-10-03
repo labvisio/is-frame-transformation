@@ -1,5 +1,7 @@
-#include "frame_conversion.hpp"
-#include "is/msgs/cv.hpp"
+#include "frame-conversion.hpp"
+#include <algorithm>
+#include <is/msgs/cv.hpp>
+#include <numeric>
 
 namespace is {
 

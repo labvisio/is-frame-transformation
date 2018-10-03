@@ -1,15 +1,15 @@
 #pragma once
 
+#include <fmt/format.h>
+#include <is/msgs/camera.pb.h>
+#include <is/msgs/common.pb.h>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/dijkstra_shortest_paths.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/optional.hpp>
+#include <tl/expected.hpp>
 #include <unordered_map>
-#include "boost/graph/adjacency_list.hpp"
-#include "boost/graph/dijkstra_shortest_paths.hpp"
-#include "boost/graph/graph_traits.hpp"
-#include "boost/optional.hpp"
 #include "edge.hpp"
-#include "tl/expected.hpp"
-#include "fmt/format.h"
-#include "is/msgs/camera.pb.h"
-#include "is/msgs/common.pb.h"
 
 namespace is {
 

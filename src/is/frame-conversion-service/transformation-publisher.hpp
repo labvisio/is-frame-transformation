@@ -5,7 +5,7 @@
 #include <is/wire/core.hpp>
 #include <string>
 #include <vector>
-#include "dependency_tracker.hpp"
+#include "dependency-tracker.hpp"
 
 namespace is {
 

@@ -1,10 +1,10 @@
+#include <google/protobuf/util/message_differencer.h>
+#include <gtest/gtest.h>
 #include <cmath>
 #include <iostream>
+#include <is/msgs/cv.hpp>
 #include <random>
-#include "frame_conversion.hpp"
-#include "google/protobuf/util/message_differencer.h"
-#include "gtest/gtest.h"
-#include "is/msgs/cv.hpp"
+#include "frame-conversion.hpp"
 
 namespace {
 

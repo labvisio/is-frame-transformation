@@ -9,7 +9,7 @@ if len(sys.argv) < 3:
     print("USAGE: python consume.py <FROM> <HINTS> <TO>")
     sys.exit(0)
 
-c = Channel(json.load(open("options.json"))["broker_uri"])
+c = Channel(json.load(open("../etc/conf/options.json"))["broker_uri"])
 s = Subscription(c)
 
 np.set_printoptions(precision=3, suppress=True)

@@ -12,18 +12,18 @@ set(author "is")
 set(module "frame-conversion")
 
 list(APPEND interfaces
-  "frame_conversion.hpp"
+  "frame-conversion.hpp"
   "edge.hpp"
 )
 
 list(APPEND sources 
-  "frame_conversion.cpp"
+  "frame-conversion.cpp"
   "edge.cpp"
   ${interfaces}
 )
 
 list(APPEND tests
-  "frame_conversion.t.cpp"
+  "frame-conversion.t.cpp"
 )
 
 #######

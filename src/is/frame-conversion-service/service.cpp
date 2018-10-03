@@ -4,12 +4,12 @@
 #include <is/wire/core.hpp>
 #include <is/wire/rpc.hpp>
 #include <is/wire/rpc/log-interceptor.hpp>
-#include "calibration_server.hpp"
+#include "calibration-server.hpp"
 #include "conf/options.pb.h"
-#include "consumer_watcher.hpp"
-#include "dependency_tracker.hpp"
-#include "frame_conversion/frame_conversion.hpp"
-#include "transformation_publisher.hpp"
+#include "consumer-watcher.hpp"
+#include "dependency-tracker.hpp"
+#include "frame-conversion/frame-conversion.hpp"
+#include "transformation-publisher.hpp"
 
 auto load_configuration(int argc, char** argv) -> is::FrameConversionServiceOptions {
   auto filename = (argc == 2) ? argv[1] : "options.json";

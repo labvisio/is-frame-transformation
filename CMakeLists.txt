@@ -7,5 +7,5 @@ if (enable_tests)
   enable_testing()
 endif()
 
-add_subdirectory("./src/frame_conversion")
-add_subdirectory("./src/service")
+add_subdirectory("./src/is/frame-conversion")
+add_subdirectory("./src/is/frame-conversion-service")

@@ -8,7 +8,7 @@ data:
     {
       "broker_uri": "amqp://rabbitmq.default",
       "zipkin_uri": "http://zipkin.default",
-      "calibrations_path": "/opt/calibrations/is-aruco-calib/bristol"
+      "calibrations_path": "/opt/calibrations/is-aruco-calib/etc/calibrations/bristol"
     }
 ---
 
@@ -48,4 +48,4 @@ spec:
       - name: calibrations
         gitRepo:
           repository: "http://github.com/labviros/is-aruco-calib"
-          revision: 6ca6f6e4b1114414301d332f17575c9691928b3e
+          revision: 20fa2ea4d8ba69993f4759d495c81d8077938c57

@@ -11,14 +11,14 @@ PROTOBUF_GENERATE_CPP(options_src options_hdr conf/options.proto)
 
 add_executable(service.bin
   service.cpp 
-  calibration_server.hpp
-  calibration_server.cpp
-  consumer_watcher.hpp
-  consumer_watcher.cpp
-  dependency_tracker.hpp
-  dependency_tracker.cpp
-  transformation_publisher.hpp
-  transformation_publisher.cpp
+  calibration-server.hpp
+  calibration-server.cpp
+  consumer-watcher.hpp
+  consumer-watcher.cpp
+  dependency-tracker.hpp
+  dependency-tracker.cpp
+  transformation-publisher.hpp
+  transformation-publisher.cpp
   ${options_src}
   ${options_hdr}
 )
