@@ -21,7 +21,7 @@ class IsFrameTransformationServiceConan(ConanFile):
         "opencv/3.4.2@is/stable",
         "zipkin-cpp-opentracing/0.3.1@is/stable",
         "expected/0.3.0@is/stable",
-        "boost/1.68.0@conan/stable",
+        "boost/1.66.0@conan/stable",
     )
 
     exports_sources = "*"
