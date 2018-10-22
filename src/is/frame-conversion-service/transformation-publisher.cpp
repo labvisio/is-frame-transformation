@@ -76,7 +76,10 @@ auto TransformationPublisher::run(boost::optional<Message> const& msg)
         }
 
         // Remove those transformations
-        for (auto&& edge : edges_to_remove) { conversions->remove_transformation(edge); }
+        for (auto&& edge : edges_to_remove) {
+          tracker->invalidate_edge(edge);
+          conversions->remove_transformation(edge);
+        }
       }
     }
   }
