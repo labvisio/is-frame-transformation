@@ -3,7 +3,7 @@ from conans import ConanFile, CMake, tools
 
 class IsFrameTransformationServiceConan(ConanFile):
     name = "is-frame-transformation"
-    version = "0.0.3"
+    version = "0.0.4"
     license = "MIT"
     url = "https://github.com/labviros/is-frame-transformation"
     description = ""
