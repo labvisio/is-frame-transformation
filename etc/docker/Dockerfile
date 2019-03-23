@@ -1,6 +1,4 @@
-FROM ubuntu:16.04 as build
-ADD bootstrap.sh .
-RUN ./bootstrap.sh 
+FROM labviros/is-wire-base:1.1.4-gcc54 as build
 
 ADD conanfile.py .
 RUN conan install . -s compiler.libcxx=libstdc++11 --build=missing
@@ -23,4 +21,4 @@ RUN cd /project                                                         \
 FROM ubuntu:16.04
 COPY --from=build /tmp/is/lib/ /
 COPY --from=build /tmp/is/bin/ /
-COPY --from=build /project/options.json /
+COPY --from=build /project/etc/conf/options.json /

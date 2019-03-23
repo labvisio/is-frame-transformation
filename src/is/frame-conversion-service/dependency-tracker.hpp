@@ -37,6 +37,7 @@ class DependencyTracker {
 
   auto update_dependency(Path const&) -> boost::optional<vision::FrameTransformation>;
   void remove_dependency(Path const&);
+  void invalidate_edge(Edge const&);
 
   template <typename F>
   void update(vision::FrameTransformation const& tf, F const& on_update);

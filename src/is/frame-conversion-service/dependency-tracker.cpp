@@ -50,12 +50,12 @@ auto DependencyTracker::update_dependency(Path const& path)
 }
 
 void DependencyTracker::add_dependency(Path const& path, Path const& route) {
-  // info("event=Dependency.AddDirect key={} value={}", path, route);
+  info("event=Dependency.AddDirect key={} value={}", path, route);
   direct_dependencies[path] = route;
   auto insert_each_edge = [&](int64_t from, int64_t to) {
-    auto edge = sorted(Edge{from, to});
-    // info("event=Dependency.AddReverse key={} value={}", edge, path);
-    reverse_dependencies[edge].insert(path);
+    auto sorted_key = sorted(Edge{from, to});
+    info("event=Dependency.AddReverse key={} value={}", sorted_key, path);
+    reverse_dependencies[sorted_key].insert(path);
   };
   adjacent_for_each(route.begin(), route.end(), insert_each_edge);
 }
@@ -68,7 +68,7 @@ void DependencyTracker::remove_dependency(Path const& path) {
       auto reverse_it = reverse_dependencies.find(edge);
       if (reverse_it == reverse_dependencies.end()) { critical("?"); }
       reverse_it->second.erase(path);
-      // info("event=Dependency.DelReverse key={} value={}", edge, path);
+      info("event=Dependency.DelReverse key={} value={}", edge, path);
     };
 
     // Remove each edge of the reverse dependencies
@@ -77,11 +77,25 @@ void DependencyTracker::remove_dependency(Path const& path) {
 
     // Remove the direct dependency
     direct_dependencies.erase(direct_it);
-    // info("event=Dependency.DelDirect key={}", path);
+    info("event=Dependency.DelDirect key={}", path);
   } else {
     // Remove from the unresolved dependencies
     unresolved_dependencies.erase(path);
-    // info("event=Dependency.DelUnresolved key={}", path);
+    info("event=Dependency.DelUnresolved key={}", path);
+  }
+}
+
+void DependencyTracker::invalidate_edge(Edge const& edge) {
+  auto sorted_key = sorted(edge);
+  auto it = reverse_dependencies.find(sorted_key);
+  if (it != reverse_dependencies.end()) {
+    info("event=InvalidateEdge key={}", sorted_key);
+    auto paths = std::vector<Path>{it->second.begin(), it->second.end()};
+    for (auto const& path : paths) {
+      remove_dependency(path);
+      unresolved_dependencies.insert(path);
+    }
+    reverse_dependencies.erase(sorted_key);
   }
 }
 
