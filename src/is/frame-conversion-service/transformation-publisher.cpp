@@ -32,14 +32,17 @@ auto TransformationPublisher::next_deadline() -> std::chrono::system_clock::time
 
 auto TransformationPublisher::run(boost::optional<Message> const& msg)
     -> std::chrono::system_clock::time_point {
+  opentracing::expected<std::unique_ptr<opentracing::Span>> maybe_span;
+
   if (msg) {
     if (!std::regex_match(msg->topic(), std::regex(".+\\.FrameTransformations"))) {
       return next_deadline();
     }
 
     auto maybe_ctx = msg->extract_tracing(tracer);
-    auto root = maybe_ctx ? tracer->StartSpan("UpdateTFs", {opentracing::ChildOf(maybe_ctx->get())})
-                          : tracer->StartSpan("UpdateTFs");
+    maybe_span = maybe_ctx
+                     ? tracer->StartSpan("UpdateTFs", {opentracing::ChildOf(maybe_ctx->get())})
+                     : tracer->StartSpan("UpdateTFs");
 
     auto tfs = msg->unpack<vision::FrameTransformations>();
     if (!tfs) {
@@ -84,18 +87,22 @@ auto TransformationPublisher::run(boost::optional<Message> const& msg)
     }
   }
 
+  auto _maybe_span = maybe_span->get();
   auto now = std::chrono::system_clock::now();
   if (now >= next_deadline()) {
     for (auto&& key_val : transformations) {
       auto topic = key_val.first;
       auto transformation = key_val.second;
-      channel.publish(topic, Message{transformation});
+      Message message{transformation};
+      if (_maybe_span) { message.inject_tracing(tracer, _maybe_span->context()); }
+      channel.publish(topic, message);
       // is::info("event=Publisher.Pub from={} to={}", transformation.from(), transformation.to());
     }
     transformations.clear();
     publish_deadline = now + throttle_interval;
   }
 
+  if (_maybe_span) { _maybe_span->Finish(); }
   return next_deadline();
 }
 
