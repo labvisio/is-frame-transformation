@@ -1,11 +1,15 @@
-from conans import ConanFile, CMake, tools
+import os
+
+from conan import ConanFile
+from conan.tools.files import copy
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 
 
 class IsFrameTransformationServiceConan(ConanFile):
     name = "is-frame-transformation"
-    version = "0.0.4"
+    version = "0.0.5"
     license = "MIT"
-    url = "https://github.com/labviros/is-frame-transformation"
+    url = "https://github.com/labvisio/is-frame-transformation"
     description = ""
     settings = "os", "compiler", "build_type", "arch"
     options = {
@@ -13,35 +17,82 @@ class IsFrameTransformationServiceConan(ConanFile):
         "fPIC": [True, False],
         "build_tests": [True, False],
     }
-    default_options = "shared=False", "fPIC=True", "build_tests=False"
-    generators = "cmake", "cmake_find_package", "cmake_paths", "virtualrunenv"
-    requires = (
-        "is-msgs/1.1.10@is/stable",
-        "is-wire/1.1.4@is/stable",
-        "opencv/3.4.2@is/stable",
-        "zipkin-cpp-opentracing/0.3.1@is/stable",
-        "expected/0.3.0@is/stable",
-        "boost/1.66.0@conan/stable",
-    )
-
+    default_options = {
+        "shared": True,
+        "fPIC": True,
+        "build_tests": False,
+    }
     exports_sources = "*"
 
-    def build_requirements(self):
+    def requirements(self):
+        self.requires(
+            "is-wire/1.1.6@is/stable",
+            transitive_headers=True,
+            transitive_libs=True,
+        )
+        self.requires("expected/0.3.0@is/stable")
+        self.requires("zipkin-cpp-opentracing/0.3.1@is/stable")
+        self.requires(
+            "is-msgs/1.1.19@is/stable",
+            transitive_headers=True,
+            transitive_libs=True,
+        )
+        self.requires("opencv/4.5.5")
+        # opencv dependencies conflicts
+        self.requires(
+            "protobuf/3.20.0",
+            transitive_headers=True,
+            transitive_libs=True,
+            force=True,
+        )
+        self.requires("libwebp/1.3.0", override=True)
+        self.requires("libjpeg-turbo/2.1.5", override=True)
         if self.options.build_tests:
-            self.build_requires("gtest/1.8.0@bincrafters/stable")
+            self.requires("gtest/1.10.0")
+
+    def build_requirements(self):
+        self.tool_requires("protobuf/3.20.0")
 
     def configure(self):
+        if self.options.shared:
+            self.options.rm_safe("fPIC")
+        self.options["zipkin-cpp-opentracing"].shared = self.options.shared
+        self.options["protobuf"].shared = self.options.shared
+        self.options["is-msgs"].shared = self.options.shared
+        self.options["fmt"].shared = self.options.shared
+        self.options["opencv"].shared = self.options.shared
+        self.options["opencv"].parallel = "tbb"
+        self.options["opencv"].with_jpeg = "libjpeg-turbo"
+        self.options["opencv"].with_gtk = False
         self.options["opencv"].with_qt = False
+        self.options["opencv"].with_quirc = False
+        self.options["opencv"].with_ffmpeg = False
+        self.options["opencv"].with_msmf = False
+        self.options["opencv"].with_msmf_dxva = False
+        self.options["opencv"].neon = False
+        self.options["opencv"].dnn = True
+        self.options["opencv"].aruco = True
+
+    def layout(self):
+        cmake_layout(self, src_folder="./")
+
+    def generate(self):
+        tc = CMakeToolchain(self)
+        tc.generate()
+        deps = CMakeDeps(self)
+        deps.generate()
 
     def build(self):
-        cmake = CMake(self, generator='Ninja')
-        cmake.definitions["CMAKE_POSITION_INDEPENDENT_CODE"] = self.options.fPIC
-        cmake.definitions["enable_tests"] = self.options.build_tests
+        cmake = CMake(self)
         cmake.configure()
         cmake.build()
-        if self.options.build_tests:
-            cmake.test()
-        cmake.install()
 
-    def package_info(self):
-        self.cpp_info.libs = ["is-frame-conversion"]
+    def package(self):
+        copy(
+            self,
+            "LICENSE.txt",
+            src=self.source_folder,
+            dst=os.path.join(self.package_folder, "licenses"),
+        )
+        cmake = CMake(self)
+        cmake.install()
