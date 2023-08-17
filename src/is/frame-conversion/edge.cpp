@@ -19,7 +19,7 @@ auto sorted(Edge const& edge) -> Edge {
 }
 
 std::ostream& operator<<(std::ostream& os, Edge const& e) {
-  os << '\"' << e.from << " -> " << e.to << '\"';
+  return os << '\"' << e.from << " -> " << e.to << '\"';
 }
 
 }  // namespace is
@@ -38,5 +38,6 @@ std::ostream& operator<<(std::ostream& os, std::vector<int64_t> const& p) {
     os << *first;
   }
   os << '\"';
+  return os;
 }
 }
