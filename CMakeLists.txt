@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.15.0)
 
 set(enable_tests true CACHE BOOL "enable testing")
 if (enable_tests)
