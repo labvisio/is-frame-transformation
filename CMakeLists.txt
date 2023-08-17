@@ -5,5 +5,8 @@ if (enable_tests)
   enable_testing()
 endif()
 
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,--disable-new-dtags")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath -Wl,.")
+
 add_subdirectory("./src/is/frame-conversion")
 add_subdirectory("./src/is/frame-conversion-service")

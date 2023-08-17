@@ -5,10 +5,10 @@
 #include <is/wire/rpc.hpp>
 #include <is/wire/rpc/log-interceptor.hpp>
 #include "calibration-server.hpp"
-#include "conf/options.pb.h"
 #include "consumer-watcher.hpp"
 #include "dependency-tracker.hpp"
 #include "frame-conversion/frame-conversion.hpp"
+#include "options.pb.h"
 #include "transformation-publisher.hpp"
 
 auto load_configuration(int argc, char** argv) -> is::FrameConversionServiceOptions {
