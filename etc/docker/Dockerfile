@@ -9,7 +9,7 @@ RUN conan remote add is ${IS_REMOTE} \
    -s compiler.libcxx=libstdc++11    \
    -s build_type=Release             \
    -b missing                        \
-   -o:h is-wire/*:shared=True
+   -o:h is-frame-transformation/*:shared=True
 
 ADD . /project
 RUN cd /project                                                         \
