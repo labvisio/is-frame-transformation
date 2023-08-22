@@ -1,4 +1,3 @@
-from __future__ import print_function
 from is_wire.core import Channel, Subscription
 from is_msgs.camera_pb2 import FrameTransformation
 import numpy as np
