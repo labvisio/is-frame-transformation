@@ -8,15 +8,18 @@ data:
     {
       "broker_uri": "amqp://rabbitmq.default",
       "zipkin_uri": "http://zipkin.default",
-      "calibrations_path": "/opt/calibrations/is-aruco-calib/etc/calibrations/ufes"
+      "calibrations_path": "/opt/calibrations/camera-calibrations/labvisio"
     }
 ---
 
-apiVersion: extensions/v1beta1 
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: "is-frame-transformation"
 spec:
+  selector:
+    matchLabels:
+      app: is-frame-transformation
   replicas: 1 
   template:
     metadata:
@@ -25,7 +28,7 @@ spec:
     spec:
       containers:
       - name: service 
-        image: labviros/is-frame-transformation:0.0.4
+        image: labvisio/is-frame-transformation:0.0.5
         command: ["/service.bin"]
         args: ["/opt/options/options.json"]
         imagePullPolicy: Always
@@ -47,5 +50,5 @@ spec:
             path: options.json
       - name: calibrations
         gitRepo:
-          repository: "http://github.com/labviros/is-aruco-calib"
-          revision: cc5bcab408298b0a6957b89750602081793bf2b4
+          repository: "http://github.com/labvisio/camera-calibrations"
+          revision: 88798e6e3dd97618a24c402c760cfcdd2afe52b8

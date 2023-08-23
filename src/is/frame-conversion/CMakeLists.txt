@@ -3,8 +3,9 @@ cmake_minimum_required(VERSION 3.10.0)
 include(GNUInstallDirs)
 
 find_package(Boost REQUIRED graph)
+find_package(ZLIB REQUIRED)
 find_package(is-msgs REQUIRED)
-find_package(opencv REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(expected REQUIRED)
 
@@ -48,7 +49,7 @@ target_link_libraries(
   is-msgs::is-msgs
   Boost::graph
   opencv::opencv
-  zlib::zlib
+  ZLIB::ZLIB
 )
 
 # header dependencies
